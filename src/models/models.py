@@ -104,6 +104,6 @@ def run_classification(X, y, folds=5, **kwargs):
         errors.append(rf_errors + [mase_error])
 
     cols = ["RerF", "S-RerF", "Graph-Node-RerF", "Graph-Edge-RerF", "MASE o 1NN"]
-    df = pd.DataFrame(errors, cols=cols)
+    df = pd.DataFrame(errors, columns=cols)
 
     return df
