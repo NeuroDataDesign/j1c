@@ -94,7 +94,7 @@ def run_random_forest(
 
 
 def run_classification(X, y, folds=5, **kwargs):
-    kfold = StratifiedKFold(n_splits=folds)
+    kfolds = StratifiedKFold(n_splits=folds)
 
     errors = []
     for train_idx, test_idx in kfolds.split(X, y):
