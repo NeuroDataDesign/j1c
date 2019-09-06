@@ -39,6 +39,7 @@ def run_random_forest(
     y,
     train_idx,
     test_idx,
+    projection_matrices=["RerF", "S-RerF", "Graph-Node-RerF", "Graph-Edge-RerF"],
     n_trees=1000,
     sporf_mtry=None,
     morf_mtry=None,
@@ -62,7 +63,6 @@ def run_random_forest(
     XTRAIN = XTRAIN.reshape(XTRAIN_samples, -1)
     XTEST = XTEST.reshape(XTEST_samples, -1)
 
-    projection_matrices = ["RerF", "S-RerF", "Graph-Node-RerF", "Graph-Edge-RerF"]
     models = []
     errors = []
     for projection_matrix in projection_matrices:
