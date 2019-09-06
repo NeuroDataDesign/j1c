@@ -34,11 +34,9 @@ def run_mase(X, y, train_idx, test_idx):
     return np.mean(error)
 
 
-def run_random_forest(
+def train_random_forest(
     X,
     y,
-    train_idx,
-    test_idx,
     projection_matrices=["RerF", "S-RerF", "Graph-Node-RerF", "Graph-Edge-RerF"],
     n_trees=1000,
     sporf_mtry=None,
@@ -46,25 +44,15 @@ def run_random_forest(
     patch_min=None,
     patch_max=None,
     random_state=None,
-    return_models=False,
 ):
-    # Data wrangle
-    XTRAIN = X[train_idx]
-    XTEST = X[test_idx]
-    YTRAIN = y[train_idx]
-    YTEST = y[test_idx]
-
     # params inferred from data
-    img_height = XTRAIN.shape[1]
-    XTRAIN_samples = XTRAIN.shape[0]
-    XTEST_samples = XTEST.shape[0]
+    img_height = X.shape[1]
+    XTRAIN_samples = X.shape[0]
 
     # vectorize so that inputs work
-    XTRAIN = XTRAIN.reshape(XTRAIN_samples, -1)
-    XTEST = XTEST.reshape(XTEST_samples, -1)
+    XTRAIN = X.reshape(XTRAIN_samples, -1)
 
     models = []
-    errors = []
     for projection_matrix in projection_matrices:
         if projection_matrix == "RerF":
             mtry = sporf_mtry
@@ -85,16 +73,24 @@ def run_random_forest(
             patch_width_max=patch_max,
             patch_width_min=patch_min,
         )
-        cls.fit(XTRAIN, YTRAIN)
+        cls.fit(XTRAIN, y)
         models.append(cls)
 
-        preds = cls.predict(XTEST)
-        errors.append(np.mean(preds != YTEST))
+    return models
 
-    if return_models:
-        return errors, models
+
+def test_random_forest(X, y, model, return_proba=False):
+    XTEST_samples = X.shape[0]
+
+    XTEST = X.reshape(XTEST_samples, -1)
+
+    if not return_proba:
+        preds = model.predict(X)
+        out = np.mean(preds != y)
     else:
-        return errors
+        out = model.predict_proba(X)
+
+    return out
 
 
 def run_classification(X, y, folds=5, **kwargs):
@@ -102,7 +98,16 @@ def run_classification(X, y, folds=5, **kwargs):
 
     errors = []
     for train_idx, test_idx in kfolds.split(X, y):
-        rf_errors = run_random_forest(X, y, train_idx, test_idx, **kwargs)
+        XTRAIN = X[train_idx]
+        YTRAIN = y[train_idx]
+        XTEST = X[test_idx]
+        YTEST = y[test_idx]
+        models = train_random_forest(XTRAIN, YTRAIN, **kwargs)
+
+        error = []
+        for model in models:
+            error.append(test_random_forest(XTEST, YTEST))
+
         mase_error = run_mase(X, y, train_idx, test_idx)
 
         errors.append(rf_errors + [mase_error])
