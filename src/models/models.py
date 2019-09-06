@@ -45,6 +45,7 @@ def run_random_forest(
     patch_min=None,
     patch_max=None,
     random_state=None,
+    return_models=False,
 ):
     # Data wrangle
     XTRAIN = X[train_idx]
@@ -90,7 +91,10 @@ def run_random_forest(
         preds = cls.predict(XTEST)
         errors.append(np.mean(preds != YTEST))
 
-    return errors
+    if return_models:
+        return errors, models
+    else:
+        return errors
 
 
 def run_classification(X, y, folds=5, **kwargs):
