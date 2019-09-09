@@ -80,15 +80,13 @@ def train_random_forest(
 
 
 def test_random_forest(X, y, model, return_proba=False):
-    XTEST_samples = X.shape[0]
-
-    XTEST = X.reshape(XTEST_samples, -1)
+    XTEST = X.reshape(X.shape[0], -1)
 
     if not return_proba:
-        preds = model.predict(X)
+        preds = model.predict(XTEST)
         out = np.mean(preds != y)
     else:
-        out = model.predict_proba(X)
+        out = model.predict_proba(XTEST)
 
     return out
 
@@ -106,11 +104,11 @@ def run_classification(X, y, folds=5, **kwargs):
 
         error = []
         for model in models:
-            error.append(test_random_forest(model, XTEST, YTEST))
+            error.append(test_random_forest(X=XTEST, y=YTEST, model=model))
 
         mase_error = run_mase(X, y, train_idx, test_idx)
 
-        errors.append(rf_errors + [mase_error])
+        errors.append(error + [mase_error])
 
     cols = ["RerF", "S-RerF", "Graph-Node-RerF", "Graph-Edge-RerF", "MASE o 1NN"]
     df = pd.DataFrame(errors, columns=cols)
