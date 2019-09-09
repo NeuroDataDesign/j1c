@@ -106,7 +106,7 @@ def run_classification(X, y, folds=5, **kwargs):
 
         error = []
         for model in models:
-            error.append(test_random_forest(XTEST, YTEST))
+            error.append(test_random_forest(model, XTEST, YTEST))
 
         mase_error = run_mase(X, y, train_idx, test_idx)
 
