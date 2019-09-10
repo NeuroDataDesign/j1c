@@ -37,22 +37,36 @@ def run_mase(X, y, train_idx, test_idx):
 def train_random_forest(
     X,
     y,
-    projection_matrices=["RerF", "S-RerF", "Graph-Node-RerF", "Graph-Edge-RerF"],
+    train_idx,
+    test_idx,
+    projection_matrices=[
+        "RerF", 
+        "S-RerF", 
+        "Graph-Node-RerF", 
+        "Graph-Edge-RerF"
+        ],
     n_trees=1000,
     sporf_mtry=None,
     morf_mtry=None,
     patch_min=None,
     patch_max=None,
     random_state=None,
+    return_prob=False
 ):
+
+    XTRAIN = X[train_idx]
+    XTEST = X[test_idx]
+    YTRAIN = y[train_idx]
+    YTEST = y[test_idx]
+
     # params inferred from data
     img_height = X.shape[1]
-    XTRAIN_samples = X.shape[0]
 
     # vectorize so that inputs work
-    XTRAIN = X.reshape(XTRAIN_samples, -1)
+    XTRAIN = XTRAIN.reshape(XTRAIN.shape[0], -1)
+    XTEST = XTEST.reshape(XTEST.shape[0], -1)
 
-    models = []
+    errors = []
     for projection_matrix in projection_matrices:
         if projection_matrix == "RerF":
             mtry = sporf_mtry
@@ -73,44 +87,40 @@ def train_random_forest(
             patch_width_max=patch_max,
             patch_width_min=patch_min,
         )
-        cls.fit(XTRAIN, y)
-        models.append(cls)
+        cls.fit(XTRAIN, YTRAIN)
+        
+        if not return_prob:
+            preds = cls.predict(XTEST)
+            errors.append(np.mean(preds != YTEST))
+        else:
+            preds = cls.predict_proba(XTEST)
+            errors.append(preds)
 
-    return models
-
-
-def test_random_forest(X, y, model, return_proba=False):
-    XTEST = X.reshape(X.shape[0], -1)
-
-    if not return_proba:
-        preds = model.predict(XTEST)
-        out = np.mean(preds != y)
-    else:
-        out = model.predict_proba(XTEST)
-
-    return out
+    return errors
 
 
-def run_classification(X, y, folds=5, **kwargs):
-    kfolds = StratifiedKFold(n_splits=folds)
+def run_classification(X, y, folds=5, seed=None, **kwargs):
+    kfolds = StratifiedKFold(n_splits=folds, random_state=seed)
 
     errors = []
     for train_idx, test_idx in kfolds.split(X, y):
-        XTRAIN = X[train_idx]
-        YTRAIN = y[train_idx]
-        XTEST = X[test_idx]
-        YTEST = y[test_idx]
-        models = train_random_forest(XTRAIN, YTRAIN, **kwargs)
-
-        error = []
-        for model in models:
-            error.append(test_random_forest(X=XTEST, y=YTEST, model=model))
-
+        error = train_random_forest(X, y, train_idx, test_idx, **kwargs)
         mase_error = run_mase(X, y, train_idx, test_idx)
-
         errors.append(error + [mase_error])
 
     cols = ["RerF", "S-RerF", "Graph-Node-RerF", "Graph-Edge-RerF", "MASE o 1NN"]
     df = pd.DataFrame(errors, columns=cols)
 
     return df
+
+
+def run_tree_sweep(X, y, folds=5, seed=None, **kwargs):
+    kfolds = StratifiedKFold(n_splits=folds, random_state=seed)
+
+    errors = []
+    for train_idx, test_idx in kfolds.split(X, y):
+        error = train_random_forest(X, y, train_idx, test_idx, return_prob=True, **kwargs)
+        errors.append(error)
+
+    return errors
+

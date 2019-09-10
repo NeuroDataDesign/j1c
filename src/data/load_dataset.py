@@ -2,21 +2,21 @@ from os.path import dirname, join
 from pathlib import Path
 
 import numpy as np
-from graspy.utils import pass_to_ranks, symmetrize
+import pandas as pd
+from graspy.utils import pass_to_ranks, symmetrize, import_edgelist
 
+MODULE_PATH = dirname(__file__)
 
 def load_COBRE(ptr=None):
     # Load data and wrangle it
-    module_path = dirname(__file__)
-    path = Path(module_path).parents[1] / "data/raw/COBRE.npz"
+    path = Path(MODULE_PATH).parents[1] / "data/raw/COBRE.npz"
 
     X, y = _load_dataset(path=path, n_nodes=263, ptr=ptr)
     return X, y
 
 
 def load_UMich(ptr=None):
-    module_path = dirname(__file__)
-    path = Path(module_path).parents[1] / "data/raw/UMich.npz"
+    path = Path(MODULE_PATH).parents[1] / "data/raw/UMich.npz"
 
     X, y = _load_dataset(path=path, n_nodes=264, ptr=ptr)
     return X, y
@@ -46,3 +46,59 @@ def _load_dataset(path, n_nodes, ptr=None):
             X_graphs[i] = pass_to_ranks(X_graphs[i])
 
     return X_graphs, y
+
+
+def load_HNU1(ptr=None, return_subid=False)):
+    path = Path(MODULE_PATH).parents[1] / "data/raw/HNU1/"
+
+    f = sorted(path.glob('*.ssv'))
+    df = pd.read_csv(path / "HNU1.csv")
+    subid = [int(fname.stem.split('_')[0].split('-')[1][-5:]) for fname in f]
+
+    y = np.array([np.unique(df.SEX[df.SUBID == s])[0] - 1 for s in subid])
+    g = np.array(import_edgelist(f, 'ssv'))
+
+    if ptr is not None:
+        g = np.array([pass_to_ranks(x) for x in g])
+
+    if return_subid:
+        return g, y, subid
+    else:
+        return g, y
+
+def load_SWU4(ptr=None):
+    path = Path(MODULE_PATH).parents[1] / "data/raw/SWU4/"
+
+    f = sorted(path.glob('*.ssv'))
+    df = pd.read_csv(path / "SWU4.csv")
+    subid = [int(fname.stem.split('_')[0].split('-')[1][-5:]) for fname in f]
+
+    y = np.array([np.unique(df.SEX[(df.SUBID == s) & (df.SESSION == 'Baseline')])[0] for s in subid]).astype(int)
+    y -= 1
+    g = np.array(import_edgelist(f, 'ssv'))
+
+    if ptr is not None:
+        g = np.array([pass_to_ranks(x) for x in g])
+
+    if return_subid:
+        return g, y, subid
+    else:
+        return g, y
+
+
+def load_BNU1(ptr=None):
+    path = Path(MODULE_PATH).parents[1] / "data/raw/BNU1/"
+
+    f = sorted(path.glob('*.ssv'))
+    df = pd.read_csv(path / "BNU1_phenotypic_data.csv")
+    subid = [int(fname.stem.split('_')[0].split('-')[1][-5:]) for fname in f]
+
+    y = np.array([np.unique(df.SEX[(df.SUBID == s) & (df.SESSION == 'Baseline')])[0] for s in subid]).astype(int)
+    y -= 1
+    g = np.array(import_edgelist(f, 'ssv'))
+
+    if ptr is not None:
+        g = np.array([pass_to_ranks(x) for x in g])
+
+    return g, y
+
