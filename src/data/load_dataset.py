@@ -48,7 +48,7 @@ def _load_dataset(path, n_nodes, ptr=None):
     return X_graphs, y
 
 
-def load_HNU1(ptr=None, return_subid=False)):
+def load_HNU1(ptr=None, return_subid=False):
     path = Path(MODULE_PATH).parents[1] / "data/raw/HNU1/"
 
     f = sorted(path.glob('*.ssv'))
@@ -66,7 +66,7 @@ def load_HNU1(ptr=None, return_subid=False)):
     else:
         return g, y
 
-def load_SWU4(ptr=None):
+def load_SWU4(ptr=None, return_subid=False):
     path = Path(MODULE_PATH).parents[1] / "data/raw/SWU4/"
 
     f = sorted(path.glob('*.ssv'))
@@ -101,4 +101,3 @@ def load_BNU1(ptr=None):
         g = np.array([pass_to_ranks(x) for x in g])
 
     return g, y
-
