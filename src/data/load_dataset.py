@@ -23,7 +23,7 @@ def load_UMich(ptr=None):
 
 
 def _load_dataset(path, n_nodes, ptr=None):
-    file = np.load(path, allow_pickle=True)
+    file = np.load(path)
     X = file["X"]
     y = file["y"].astype(int)
 
